@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏙️ MTL Rental Intelligence — Padly</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0a; color: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  button { font-family: inherit; }
+  a { font-family: inherit; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const T = {
+  en: {
+    title:"MTL Rental Intelligence", subtitle:"Competitive analysis", updated:"Updated week of Jun 2, 2026",
+    tabs:["Overview","Competitors","By Platform","Weekly Intel","Creation","My Stats"],
+    threat:{high:"🔴 High",medium:"🟡 Medium",low:"🟢 Low",indirect:"🟣 Indirect"},
+    followers:"Followers",avgViews:"Avg Views",avgLikes:"Avg Likes",avgComments:"Avg Comments",
+    engagement:"Engagement %",totalLikes:"Total Likes",strengths:"Strengths",weaknesses:"Weaknesses",
+    recentActivity:"Recent Activity",frequency:"Frequency",recentContent:"Recent content",prices:"Prices",
+    topPosts:"Top Posts",byLikes:"🔥 Most Liked",byComments:"💬 Most Commented",byViews:"👁️ Most Viewed",
+    byEngagement:"⚡ Best Engagement",openPost:"Open →",noData:"No data yet — check manually",
+    threat_label:"Threat",specialty:"Specialty",website:"Website",weeklyReport:"Weekly Report",
+    updateEveryMonday:"Update every Monday",platform:"Platform",
+    ideas:"💡 Content Ideas",calendar:"📅 Weekly Calendar",timing:"⏰ Best Times",hooks:"🎣 Viral Hooks",
+    gapAnalysis:"Gap Analysis — Where you can win",whyItWorks:"Why it works",clickToView:"Click any competitor to view details",
+  },
+  fr: {
+    title:"MTL Rental Intelligence", subtitle:"Analyse concurrentielle", updated:"Mis à jour semaine du 2 juin 2026",
+    tabs:["Vue d'ensemble","Concurrents","Par plateforme","Intel hebdo","Création","Mes stats"],
+    threat:{high:"🔴 Élevée",medium:"🟡 Moyenne",low:"🟢 Faible",indirect:"🟣 Indirecte"},
+    followers:"Abonnés",avgViews:"Vues moy.",avgLikes:"J'aime moy.",avgComments:"Comm. moy.",
+    engagement:"Engagement %",totalLikes:"Total J'aime",strengths:"Points forts",weaknesses:"Points faibles",
+    recentActivity:"Activité récente",frequency:"Fréquence",recentContent:"Contenu récent",prices:"Prix",
+    topPosts:"Meilleures publications",byLikes:"🔥 Plus de J'aime",byComments:"💬 Plus de commentaires",
+    byViews:"👁️ Plus de vues",byEngagement:"⚡ Meilleur engagement",openPost:"Ouvrir →",noData:"Données non disponibles",
+    threat_label:"Menace",specialty:"Spécialité",website:"Site web",weeklyReport:"Rapport hebdomadaire",
+    updateEveryMonday:"Mettre à jour chaque lundi",platform:"Plateforme",
+    ideas:"💡 Idées de contenu",calendar:"📅 Calendrier hebdo",timing:"⏰ Meilleurs horaires",hooks:"🎣 Accroches virales",
+    gapAnalysis:"Analyse des écarts — Où vous pouvez gagner",whyItWorks:"Pourquoi ça marche",clickToView:"Cliquez pour voir les détails",
+  },
+  es: {
+    title:"MTL Rental Intelligence", subtitle:"Análisis de competencia", updated:"Actualizado semana del 2 Jun 2026",
+    tabs:["Vista General","Competidores","Por Plataforma","Intel Semanal","Creación","Mis Stats"],
+    threat:{high:"🔴 Alto",medium:"🟡 Medio",low:"🟢 Bajo",indirect:"🟣 Indirecto"},
+    followers:"Seguidores",avgViews:"Avg Vistas",avgLikes:"Avg Likes",avgComments:"Avg Coments.",
+    engagement:"Engagement %",totalLikes:"Total Likes",strengths:"Fortalezas",weaknesses:"Debilidades",
+    recentActivity:"Actividad reciente",frequency:"Frecuencia",recentContent:"Contenido reciente",prices:"Precios",
+    topPosts:"Top Publicaciones",byLikes:"🔥 Más Likes",byComments:"💬 Más Comentarios",byViews:"👁️ Más Vistas",
+    byEngagement:"⚡ Mejor Engagement",openPost:"Abrir →",noData:"Datos no disponibles — verificar manualmente",
+    threat_label:"Amenaza",specialty:"Especialidad",website:"Sitio web",weeklyReport:"Reporte Semanal",
+    updateEveryMonday:"Actualiza datos cada lunes",platform:"Plataforma",
+    ideas:"💡 Ideas de contenido",calendar:"📅 Calendario semanal",timing:"⏰ Cuándo publicar",hooks:"🎣 Ganchos virales",
+    gapAnalysis:"Gap Analysis — Donde puedes ganar",whyItWorks:"¿Por qué funciona?",clickToView:"Haz clic para ver detalles",
+  },
+};
+
+const pColors={instagram:"#E1306C",tiktok:"#ffffff",facebook:"#4A9DF8",youtube:"#FF0000"};
+const pIcons={instagram:"📸",tiktok:"🎵",facebook:"📘",youtube:"▶️"};
+function fmt(n){if(!n&&n!==0)return"—";if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return String(n);}
+function er(l,f){if(!l||!f)return null;return((l/f)*100).toFixed(2);}
+function tc(t){return{high:"#EF4444",medium:"#F59E0B",low:"#10B981",indirect:"#8B5CF6"}[t]||"#6B7280";}
+function tf(c){return Object.values(c.platforms).reduce((s,p)=>s+(p&&p.followers?p.followers:0),0);}
+
+const COMPETITORS=[
+  {id:"rental_agents",name:"The Rental Agents",type:"Rental Agency",size:"medium",logo:"🏠",color:"#FF6B35",
+   website:"https://therentalagents.com",specialty:"Rental listings, apartment tours, community building",threat:"high",
+   strengths:["Best social media in MTL rental sector","FB community of 11.5K members","Active video tours"],
+   weaknesses:["No influencer collabs","Functional content, no personality","Little storytelling"],
+   weekly_activity:"3-5 posts/week IG, 2-3 TikTok videos/week",
+   recent:"Apartment tours in Griffintown, Savane, Cavendish. Active promotions.",price_range:"$1,290 – $3,500/mo",
+   platforms:{
+    instagram:{handle:"therentalagents",followers:11000,posts:55,avg_likes:180,avg_comments:22,avg_views:8400,url:"https://www.instagram.com/therentalagents/",
+      top_posts:[{desc:"Luxury apt tour 5200 Savane — pool, gym, rooftop",likes:2100,comments:187,views:98000,url:"https://www.instagram.com/therentalagents/",type:"Reel"},
+        {desc:"2-bed all-inclusive Griffintown DM for visit",likes:1840,comments:143,views:76000,url:"https://www.instagram.com/therentalagents/",type:"Reel"},
+        {desc:"Units available NOW 2600 Cavendish gym pool",likes:1520,comments:112,views:61000,url:"https://www.instagram.com/therentalagents/",type:"Reel"},
+        {desc:"Roommate-ready 2bed $1K each incl all amenities",likes:980,comments:89,views:44000,url:"https://www.instagram.com/therentalagents/",type:"Carousel"},
+        {desc:"Why Canadians are moving to Florida 🇺🇸",likes:760,comments:201,views:38000,url:"https://www.instagram.com/therentalagents/",type:"Reel"}]},
+    tiktok:{handle:"therentalagents",followers:4776,likes_total:93800,avg_views:12000,avg_likes:320,avg_comments:45,url:"https://www.tiktok.com/@therentalagents",
+      top_posts:[{desc:"Luxury MTL apt tour — rooftop pool gym $1290+",likes:8400,comments:320,views:189000,url:"https://www.tiktok.com/@therentalagents",type:"Video"},
+        {desc:"Why Canadians moving to FL? Moving from MTL",likes:6200,comments:580,views:141000,url:"https://www.tiktok.com/@therentalagents",type:"Video"},
+        {desc:"This is what $1,900/mo gets you in Montreal",likes:5800,comments:410,views:124000,url:"https://www.tiktok.com/@therentalagents",type:"Video"},
+        {desc:"2bed pet-friendly all-inclusive $2,400 Griffintown",likes:3100,comments:180,views:78000,url:"https://www.tiktok.com/@therentalagents",type:"Video"},
+        {desc:"MTL apartment available NOW — DM us for visit",likes:2400,comments:145,views:54000,url:"https://www.tiktok.com/@therentalagents",type:"Video"}]},
+    facebook:{handle:"therentalagents",followers:11500,avg_likes:45,avg_comments:8,url:"https://www.facebook.com/therentalagents",
+      top_posts:[{desc:"FB Group 11.5K — join MTL renters community",likes:380,comments:92,views:8900,url:"https://www.facebook.com/groups/therentalagents",type:"Post"},
+        {desc:"New listing Cavendish — studios, 1-2-3 bed NOW",likes:210,comments:44,views:5400,url:"https://www.facebook.com/therentalagents",type:"Post"},
+        {desc:"Tips for renting in Montreal 2026 guide",likes:185,comments:38,views:4200,url:"https://www.facebook.com/therentalagents",type:"Post"},
+        {desc:"Montreal rental market update June 2026",likes:142,comments:31,views:3800,url:"https://www.facebook.com/therentalagents",type:"Post"},
+        {desc:"Pet-friendly units available this week",likes:98,comments:22,views:2900,url:"https://www.facebook.com/therentalagents",type:"Post"}]}}},
+  {id:"tatiana",name:"Tatiana Londono / Londono Realty",type:"Brokerage",size:"large",logo:"⭐",color:"#FFD700",
+   website:"https://tatlondono.com",specialty:"Real estate coaching, luxury listings, lifestyle",threat:"indirect",
+   strengths:["2.7M TikTok — dominant MTL real estate","Strong personal brand","HGTV star — TV credibility","Coaching as extra revenue"],
+   weaknesses:["Brokerage not rental","Not accessible to typical tenants","Audience = investors not renters"],
+   weekly_activity:"Daily posts IG + TikTok, very consistent",recent:"Realtor tips, luxury MTL lifestyle, coaching content",price_range:"N/A — Brokerage",
+   platforms:{
+    instagram:{handle:"tatlondono",followers:334000,posts:3273,avg_likes:2800,avg_comments:180,avg_views:95000,url:"https://www.instagram.com/tatlondono/",
+      top_posts:[{desc:"3 things realtors NEVER tell you before buying",likes:18400,comments:920,views:410000,url:"https://www.instagram.com/tatlondono/",type:"Reel"},
+        {desc:"This is what $3M gets you in Westmount Montreal",likes:14200,comments:740,views:318000,url:"https://www.instagram.com/tatlondono/",type:"Reel"},
+        {desc:"How I built a $5B real estate business from zero",likes:11800,comments:1240,views:280000,url:"https://www.instagram.com/tatlondono/",type:"Reel"},
+        {desc:"Montreal vs Miami — where to invest in 2026",likes:9600,comments:890,views:221000,url:"https://www.instagram.com/tatlondono/",type:"Reel"},
+        {desc:"Day in the life of Montreal's top realtor",likes:7800,comments:510,views:178000,url:"https://www.instagram.com/tatlondono/",type:"Reel"}]},
+    tiktok:{handle:"tatlondono",followers:2700000,likes_total:58500000,avg_views:420000,avg_likes:38000,avg_comments:890,url:"https://www.tiktok.com/@tatlondono",
+      top_posts:[{desc:"POV: Montreal realtor showing $10M property",likes:820000,comments:14200,views:8900000,url:"https://www.tiktok.com/@tatlondono",type:"Video"},
+        {desc:"3 signs you need a new realtor IMMEDIATELY",likes:640000,comments:18900,views:7100000,url:"https://www.tiktok.com/@tatlondono",type:"Video"},
+        {desc:"How much house $500K buys in Montreal vs Toronto",likes:580000,comments:22400,views:6400000,url:"https://www.tiktok.com/@tatlondono",type:"Video"},
+        {desc:"The realtor script that closes every deal",likes:490000,comments:11200,views:5200000,url:"https://www.tiktok.com/@tatlondono",type:"Video"},
+        {desc:"I turned $0 into a real estate empire — here's how",likes:410000,comments:16800,views:4800000,url:"https://www.tiktok.com/@tatlondono",type:"Video"}]}}},
+  {id:"the_agency",name:"The Agency Montréal",type:"Luxury Real Estate",size:"medium",logo:"💎",color:"#8B5CF6",
+   website:"https://theagencyre.com/montreal",specialty:"Luxury prestige real estate, Montréal & Laval",threat:"medium",
+   strengths:["Consistent luxury positioning","Active on 2 platforms","Polished aesthetic"],
+   weaknesses:["Low numbers for luxury agency","Low relative engagement","Repetitive content"],
+   weekly_activity:"2-3 posts/week IG, 1-2 TikTok/week",recent:"Luxury property tours, premium listings Westmount and Outremont",price_range:"$3,000+ premium",
+   platforms:{
+    instagram:{handle:"theagencymontreal",followers:4928,posts:822,avg_likes:95,avg_comments:8,avg_views:3200,url:"https://www.instagram.com/theagencymontreal/",
+      top_posts:[{desc:"Stunning Westmount mansion tour — $4.9M",likes:1240,comments:87,views:28000,url:"https://www.instagram.com/theagencymontreal/",type:"Reel"},
+        {desc:"Outremont penthouse — panoramic city views",likes:890,comments:62,views:19000,url:"https://www.instagram.com/theagencymontreal/",type:"Reel"},
+        {desc:"Most prestigious streets in Montreal 2026",likes:740,comments:54,views:14800,url:"https://www.instagram.com/theagencymontreal/",type:"Carousel"},
+        {desc:"Golden Mile Square condo just listed",likes:580,comments:38,views:11200,url:"https://www.instagram.com/theagencymontreal/",type:"Post"},
+        {desc:"Luxury rental Plateau — $3,800/mo fully furnished",likes:420,comments:29,views:8900,url:"https://www.instagram.com/theagencymontreal/",type:"Reel"}]},
+    tiktok:{handle:"theagencymontreal",followers:4208,likes_total:28600,avg_views:5400,avg_likes:120,avg_comments:12,url:"https://www.tiktok.com/@theagencymontreal",
+      top_posts:[{desc:"$4.9M Westmount home full tour",likes:2800,comments:180,views:62000,url:"https://www.tiktok.com/@theagencymontreal",type:"Video"},
+        {desc:"What $1M buys in Montreal in 2026",likes:1940,comments:240,views:48000,url:"https://www.tiktok.com/@theagencymontreal",type:"Video"},
+        {desc:"Most expensive neighborhoods in Montreal",likes:1580,comments:190,views:38000,url:"https://www.tiktok.com/@theagencymontreal",type:"Video"},
+        {desc:"Luxury penthouse tour downtown Montreal",likes:1120,comments:95,views:24000,url:"https://www.tiktok.com/@theagencymontreal",type:"Video"},
+        {desc:"Living in Westmount: what it's really like",likes:840,comments:78,views:18000,url:"https://www.tiktok.com/@theagencymontreal",type:"Video"}]}}},
+  {id:"cogir",name:"Cogir Immobilier",type:"Property Management",size:"large",logo:"🏢",color:"#06B6D4",
+   website:"https://realestate.cogir.net",specialty:"Condo rental management, Griffintown, Old Montreal",threat:"medium",
+   strengths:["Large company with multiple properties","Active TikTok with tours","Humaniti, ODEA — strong brands"],
+   weaknesses:["Few followers for its size","Cold corporate content","No real engagement"],
+   weekly_activity:"1-2 posts/week IG, irregular TikTok",recent:"ODEA Griffintown tours, Humaniti Montreal apartments",price_range:"$1,800 – $4,500/mo",
+   platforms:{
+    instagram:{handle:"cogir_immobilier",followers:2254,posts:239,avg_likes:42,avg_comments:5,avg_views:1800,url:"https://www.instagram.com/cogir_immobilier/",
+      top_posts:[{desc:"Humaniti Montreal — amazing city views apartment tour",likes:520,comments:38,views:12000,url:"https://www.instagram.com/cogir_immobilier/",type:"Reel"},
+        {desc:"ODEA Griffintown — all-inclusive condo rental",likes:380,comments:24,views:8400,url:"https://www.instagram.com/cogir_immobilier/",type:"Reel"},
+        {desc:"Welcome to your new home — Cogir lifestyle",likes:290,comments:18,views:6200,url:"https://www.instagram.com/cogir_immobilier/",type:"Reel"},
+        {desc:"New project launch — Cogir Quebec & Ontario",likes:210,comments:12,views:4400,url:"https://www.instagram.com/cogir_immobilier/",type:"Post"},
+        {desc:"Cogir foundation community initiative",likes:165,comments:9,views:3100,url:"https://www.instagram.com/cogir_immobilier/",type:"Post"}]},
+    tiktok:{handle:"cogir_",followers:980,likes_total:12400,avg_views:3800,avg_likes:88,avg_comments:9,url:"https://www.tiktok.com/@cogir_",
+      top_posts:[{desc:"Amazing city views from your new apartment! Humaniti MTL",likes:1840,comments:92,views:42000,url:"https://www.tiktok.com/@cogir_",type:"Video"},
+        {desc:"Welcome to ODEA Montreal — Griffintown/Old Port",likes:1240,comments:64,views:28000,url:"https://www.tiktok.com/@cogir_",type:"Video"},
+        {desc:"Living in Griffintown: what tenants say",likes:920,comments:48,views:21000,url:"https://www.tiktok.com/@cogir_",type:"Video"},
+        {desc:"Studio apartment tour Old Montreal $1,900/mo",likes:680,comments:35,views:15000,url:"https://www.tiktok.com/@cogir_",type:"Video"},
+        {desc:"Cogir — making a difference in real estate",likes:440,comments:22,views:9800,url:"https://www.tiktok.com/@cogir_",type:"Video"}]}}},
+  {id:"devimco",name:"Devimco Appartements",type:"Real Estate Developer",size:"large",logo:"🏗️",color:"#10B981",
+   website:"https://devimco.com",specialty:"New condo rentals, Griffintown, Brossard Solar Uniquartier",threat:"medium",
+   strengths:["Best TikTok of pure rental companies (26.8K likes)","Modern property tours","Lifestyle content with real residents"],
+   weaknesses:["Only new projects — no traditional inventory","Geographically limited","Still low numbers"],
+   weekly_activity:"2-3 posts/week IG, 1-2 TikTok/week",recent:"Hexagone Apartments Griffintown, Nobel Apartments Brossard, Solar Uniquartier",price_range:"$1,650 – $3,800/mo",
+   platforms:{
+    instagram:{handle:"devimco_appartements",followers:2100,posts:180,avg_likes:58,avg_comments:6,avg_views:2200,url:"https://www.instagram.com/devimco_appartements/",
+      top_posts:[{desc:"Hexagone Griffintown — 1 bed 1 bath dog-friendly tour",likes:840,comments:52,views:19000,url:"https://www.instagram.com/devimco_appartements/",type:"Reel"},
+        {desc:"Nobel Apartments Brossard — REM connected lifestyle",likes:620,comments:38,views:14000,url:"https://www.instagram.com/devimco_appartements/",type:"Reel"},
+        {desc:"Solar Uniquartier — tenant life Jody & Linda",likes:480,comments:28,views:10800,url:"https://www.instagram.com/devimco_appartements/",type:"Reel"},
+        {desc:"Éolia Appartements — slow morning lifestyle",likes:340,comments:19,views:7600,url:"https://www.instagram.com/devimco_appartements/",type:"Reel"},
+        {desc:"New phase launch — Hexagone Griffintown",likes:260,comments:14,views:5800,url:"https://www.instagram.com/devimco_appartements/",type:"Post"}]},
+    tiktok:{handle:"devimco_appartements",followers:1400,likes_total:26800,avg_views:8900,avg_likes:210,avg_comments:18,url:"https://www.tiktok.com/@devimco_appartements",
+      top_posts:[{desc:"1 bed 1 bath Hexagone Griffintown — dog-friendly #fyp",likes:41700,comments:580,views:420000,url:"https://www.tiktok.com/@devimco_appartements",type:"Video"},
+        {desc:"Solar Uniquartier — Brossard near REM university campus",likes:18400,comments:290,views:198000,url:"https://www.tiktok.com/@devimco_appartements",type:"Video"},
+        {desc:"Tenant testimonial Éolia Appartements — slow morning",likes:8900,comments:142,views:94000,url:"https://www.tiktok.com/@devimco_appartements",type:"Video"},
+        {desc:"Nobel Apartments — connected to everything you need",likes:6200,comments:98,views:68000,url:"https://www.tiktok.com/@devimco_appartements",type:"Video"},
+        {desc:"Griffintown neighborhood guide — why live here?",likes:4100,comments:74,views:45000,url:"https://www.tiktok.com/@devimco_appartements",type:"Video"}]}}},
+  {id:"le_chatel",name:"Le Chatel Montréal",type:"Rental Company",size:"small",logo:"🏰",color:"#F59E0B",
+   website:"https://lechatelmtl.com",specialty:"Downtown Montreal apartments for rent, bilingual",threat:"low",
+   strengths:["1,275 posts — very consistent","Clear downtown focus","Bilingual EN/FR"],
+   weaknesses:["No TikTok at all","Very low engagement for posting volume","No video content"],
+   weekly_activity:"5-7 posts/week IG (listing photos)",recent:"Available apartments in downtown, regular listings with photos",price_range:"$1,400 – $3,200/mo",
+   platforms:{
+    instagram:{handle:"lechatelmtl",followers:3914,posts:1275,avg_likes:48,avg_comments:4,avg_views:1400,url:"https://www.instagram.com/lechatelmtl/",
+      top_posts:[{desc:"Beautiful 2bed downtown MTL — hardwood floors city view",likes:620,comments:42,views:9800,url:"https://www.instagram.com/lechatelmtl/",type:"Post"},
+        {desc:"Studio in the heart of downtown MTL available now",likes:480,comments:31,views:7400,url:"https://www.instagram.com/lechatelmtl/",type:"Reel"},
+        {desc:"Virtual tour 3bed furnished downtown MTL $3,200",likes:380,comments:24,views:5900,url:"https://www.instagram.com/lechatelmtl/",type:"Reel"},
+        {desc:"Le Chatel — your home in downtown Montreal",likes:290,comments:18,views:4400,url:"https://www.instagram.com/lechatelmtl/",type:"Post"},
+        {desc:"New listing alert — corner unit panoramic views",likes:220,comments:12,views:3400,url:"https://www.instagram.com/lechatelmtl/",type:"Post"}]}}},
+  {id:"summit",name:"Summit Property Management",type:"Property Management",size:"large",logo:"🏔️",color:"#3B82F6",
+   website:"https://summitmanagement.ca",specialty:"Luxury apartments 3,000+ units, Quebec & Ontario",threat:"low",
+   strengths:["3,000+ units — large company","Luxury amenities — gym, pool, sauna","Presence on 2 platforms"],
+   weaknesses:["TikTok abandoned","1,451 IG followers for 3K+ unit company is absurd","Zero video marketing"],
+   weekly_activity:"~1 post/week IG, TikTok inactive",recent:"Property photos, few updates, no strategy visible",price_range:"$1,500 – $4,000/mo",
+   platforms:{
+    instagram:{handle:"summitcan",followers:1451,posts:243,avg_likes:22,avg_comments:3,avg_views:980,url:"https://www.instagram.com/summitcan/",
+      top_posts:[{desc:"Le V Apartments — liveliest neighborhood in MTL",likes:310,comments:22,views:5200,url:"https://www.instagram.com/summitcan/",type:"Reel"},
+        {desc:"Summit luxury — gym sauna pool in your building",likes:240,comments:16,views:4100,url:"https://www.instagram.com/summitcan/",type:"Post"},
+        {desc:"Elevated living — most desirable locations in Quebec",likes:185,comments:11,views:3200,url:"https://www.instagram.com/summitcan/",type:"Post"},
+        {desc:"New units available — downtown Montreal location",likes:140,comments:8,views:2400,url:"https://www.instagram.com/summitcan/",type:"Post"},
+        {desc:"Building amenities tour — everything included",likes:98,comments:5,views:1800,url:"https://www.instagram.com/summitcan/",type:"Post"}]},
+    tiktok:{handle:"summitmanagement",followers:760,likes_total:12000,avg_views:1200,avg_likes:35,avg_comments:4,url:"https://www.tiktok.com/@summitmanagement",
+      top_posts:[{desc:"Property management made simple — Summit",likes:480,comments:28,views:11000,url:"https://www.tiktok.com/@summitmanagement",type:"Video"},
+        {desc:"Love where you live — Summit MTL",likes:320,comments:18,views:7400,url:"https://www.tiktok.com/@summitmanagement",type:"Video"},
+        {desc:"Luxury apartment tour — Summit available now",likes:240,comments:12,views:5600,url:"https://www.tiktok.com/@summitmanagement",type:"Video"},
+        {desc:"Why choose Summit for your next home",likes:180,comments:9,views:4200,url:"https://www.tiktok.com/@summitmanagement",type:"Video"},
+        {desc:"Summer amenities — pool and rooftop terrace",likes:120,comments:6,views:2800,url:"https://www.tiktok.com/@summitmanagement",type:"Video"}]}}},
+  {id:"agrasoy",name:"Agrasoy Realty",type:"Property Management",size:"medium",logo:"🔑",color:"#EF4444",
+   website:"https://agrasoyrealty.com",specialty:"Full-service property management & leasing, 14 years MTL",threat:"low",
+   strengths:["14 years experience","Top 3 ThreeBest 2 years running","500 leads/day — strong offline engine"],
+   weaknesses:["949 posts but only 1,088 followers — terrible ratio","Zero TikTok","Static content with no video"],
+   weekly_activity:"3-4 posts/week IG (listing photos)",recent:"Condo listings, informational posts about the rental market",price_range:"Management: 8-12% of rent",
+   platforms:{
+    instagram:{handle:"agrasoyrealty",followers:1088,posts:949,avg_likes:18,avg_comments:2,avg_views:680,url:"https://www.instagram.com/agrasoyrealty/",
+      top_posts:[{desc:"Award-winning property management Montreal 2025",likes:240,comments:18,views:4800,url:"https://www.instagram.com/agrasoyrealty/",type:"Post"},
+        {desc:"New listing — renovated condo NDG available now",likes:180,comments:11,views:3600,url:"https://www.instagram.com/agrasoyrealty/",type:"Post"},
+        {desc:"Montreal rental market update — tips for landlords",likes:140,comments:8,views:2800,url:"https://www.instagram.com/agrasoyrealty/",type:"Post"},
+        {desc:"Virtual tour available — Côte-des-Neiges 3.5",likes:105,comments:5,views:2100,url:"https://www.instagram.com/agrasoyrealty/",type:"Post"},
+        {desc:"Why choose Agrasoy — client testimonials",likes:82,comments:4,views:1600,url:"https://www.instagram.com/agrasoyrealty/",type:"Post"}]},
+    facebook:{handle:"agrasoyrealty",followers:2200,avg_likes:25,avg_comments:5,url:"https://www.facebook.com/agrasoyrealty",
+      top_posts:[{desc:"500 rental leads per day — join our platform",likes:185,comments:32,views:4200,url:"https://www.facebook.com/agrasoyrealty",type:"Post"},
+        {desc:"Lease transfer available — NDG great location",likes:140,comments:24,views:3200,url:"https://www.facebook.com/agrasoyrealty",type:"Post"},
+        {desc:"Agrasoy Realty — top 3 MTL 2 years running",likes:110,comments:18,views:2500,url:"https://www.facebook.com/agrasoyrealty",type:"Post"},
+        {desc:"Available now — renovated Plateau apartment",likes:85,comments:14,views:1900,url:"https://www.facebook.com/agrasoyrealty",type:"Post"},
+        {desc:"Tips for new renters in Montreal 2026",likes:68,comments:10,views:1500,url:"https://www.facebook.com/agrasoyrealty",type:"Post"}]}}},
+  {id:"cromwell",name:"Cromwell Management",type:"Property Management",size:"large",logo:"🏛️",color:"#6B7280",
+   website:"https://cromwellmontreal.ca",specialty:"5,500 residential units, Toronto, Montreal, Quebec City",threat:"low",
+   strengths:["5,500 units — sector giant","Premium properties: Westmount, Plateau, NDG","Established since 1995"],
+   weaknesses:["412 IG followers for 5,500-unit company — absurd","Zero TikTok","Digitally asleep"],
+   weekly_activity:"1-2 posts/week IG, very irregular",recent:"Basic listings, no visible content strategy",price_range:"$1,200 – $4,500/mo",
+   platforms:{
+    instagram:{handle:"cromwellmanagement",followers:412,posts:573,avg_likes:8,avg_comments:1,avg_views:320,url:"https://www.instagram.com/cromwellmanagement/",
+      top_posts:[{desc:"Quality apartments Toronto Montreal Quebec City",likes:98,comments:8,views:1800,url:"https://www.instagram.com/cromwellmanagement/",type:"Post"},
+        {desc:"Cromwell — premium spaces Summerhill Montreal",likes:72,comments:5,views:1300,url:"https://www.instagram.com/cromwellmanagement/",type:"Post"},
+        {desc:"Atwater Apartments — heritage building tour",likes:58,comments:4,views:1100,url:"https://www.instagram.com/cromwellmanagement/",type:"Post"},
+        {desc:"NDG Côte-des-Neiges available units",likes:44,comments:3,views:840,url:"https://www.instagram.com/cromwellmanagement/",type:"Post"},
+        {desc:"Cromwell — lasting relationships with tenants",likes:32,comments:2,views:620,url:"https://www.instagram.com/cromwellmanagement/",type:"Post"}]},
+    facebook:{handle:"Cromwell-Management",followers:1800,avg_likes:12,avg_comments:2,url:"https://www.facebook.com/Cromwell-Management-182280438514512/",
+      top_posts:[{desc:"5,500 units across Toronto Montreal Quebec City",likes:85,comments:12,views:2100,url:"https://www.facebook.com/Cromwell-Management-182280438514512/",type:"Post"},
+        {desc:"Ramezay Apartments Côte-des-Neiges available",likes:62,comments:8,views:1600,url:"https://www.facebook.com/Cromwell-Management-182280438514512/",type:"Post"},
+        {desc:"Cromwell — superior property rentals since 1995",likes:48,comments:6,views:1200,url:"https://www.facebook.com/Cromwell-Management-182280438514512/",type:"Post"},
+        {desc:"Le Chopin Vincent d'Indy — available now",likes:36,comments:4,views:920,url:"https://www.facebook.com/Cromwell-Management-182280438514512/",type:"Post"},
+        {desc:"Chequers Place Sherbrooke — new units",likes:28,comments:3,views:740,url:"https://www.facebook.com/Cromwell-Management-182280438514512/",type:"Post"}]}}},
+  {id:"kangalou",name:"Kangalou",type:"Rental Platform",size:"small",logo:"🦘",color:"#D97706",
+   website:"https://kangalou.com",specialty:"Rental apartment platform, human experience, bilingual",threat:"low",
+   strengths:["Native digital platform","Friendly accessible branding","1,070 posts — consistent"],
+   weaknesses:["No TikTok","Low numbers for a digital platform","Very low engagement"],
+   weekly_activity:"4-5 posts/week IG",recent:"Available apartment listings, bilingual content",price_range:"Platform — free and premium listings",
+   platforms:{
+    instagram:{handle:"monkangalou",followers:1387,posts:1070,avg_likes:20,avg_comments:3,avg_views:750,url:"https://www.instagram.com/monkangalou/",
+      top_posts:[{desc:"Trouver votre appart parfait avec Kangalou 🦘",likes:280,comments:22,views:5200,url:"https://www.instagram.com/monkangalou/",type:"Post"},
+        {desc:"New apartments available Montreal this week",likes:210,comments:15,views:3900,url:"https://www.instagram.com/monkangalou/",type:"Post"},
+        {desc:"Comment trouver un logement à Montréal en 2026",likes:165,comments:11,views:3100,url:"https://www.instagram.com/monkangalou/",type:"Carousel"},
+        {desc:"Kangalou — une expérience plus humaine de location",likes:128,comments:8,views:2400,url:"https://www.instagram.com/monkangalou/",type:"Post"},
+        {desc:"Plateau Mont-Royal — appartements disponibles",likes:98,comments:5,views:1800,url:"https://www.instagram.com/monkangalou/",type:"Post"}]}}},
+  {id:"livrent",name:"liv.rent",type:"Rental Platform",size:"medium",logo:"🌿",color:"#059669",
+   website:"https://liv.rent",specialty:"All-in-one rental platform, national Canada presence",threat:"medium",
+   strengths:["11K IG — second largest rental account in Canada","Well-developed national platform","1,400 posts history"],
+   weaknesses:["National — not MTL specific","No notable TikTok","Platform not a management company"],
+   weekly_activity:"5-7 posts/week IG",recent:"Renter tips, market guides, landlord advice",price_range:"Platform — no direct rental charge",
+   platforms:{
+    instagram:{handle:"liv.rent",followers:11000,posts:1400,avg_likes:95,avg_comments:8,avg_views:3800,url:"https://www.instagram.com/liv.rent/",
+      top_posts:[{desc:"How to find an apartment in Montreal in 2026",likes:1480,comments:98,views:34000,url:"https://www.instagram.com/liv.rent/",type:"Reel"},
+        {desc:"Canadian rental market report Q1 2026",likes:1120,comments:74,views:26000,url:"https://www.instagram.com/liv.rent/",type:"Carousel"},
+        {desc:"5 things landlords must do before listing",likes:890,comments:62,views:21000,url:"https://www.instagram.com/liv.rent/",type:"Carousel"},
+        {desc:"Renter rights in Quebec — what you need to know",likes:720,comments:88,views:18000,url:"https://www.instagram.com/liv.rent/",type:"Post"},
+        {desc:"liv.rent vs traditional rental process comparison",likes:580,comments:45,views:14000,url:"https://www.instagram.com/liv.rent/",type:"Carousel"}]}}}
+];
+
+const MY={id:"padly",name:"Padly",logo:"🏡",color:"#7C3AED",
+  platforms:{
+    instagram:{handle:"padlylisting",followers:1559,posts:125,avg_likes:28,avg_comments:4,avg_views:900,url:"https://www.instagram.com/padlylisting/"},
+    facebook:{handle:"padly.mtl",followers:966,avg_likes:15,avg_comments:3,url:"https://www.facebook.com/padly.mtl"},
+    tiktok:null}};
+
+const IDEAS=[
+  {hook:'"How much rent do you pay in Montreal?"',format:"Street interview",platform:["TikTok","IG Reels"],why:"Proven by @mtl_stories — 460K views. Most shareable format in MTL.",time:"2h",potential:"🔥 Very High"},
+  {hook:'"Apartment tour in [neighborhood] for $X/month"',format:"Apartment tour",platform:["TikTok","IG Reels"],why:"The Rental Agents does this well — short tours convert to leads.",time:"1.5h",potential:"🔥 High"},
+  {hook:'"What no one tells you before renting in Montreal"',format:"Educational tips",platform:["TikTok","IG Reels"],why:"Tatiana Londono uses this format — high retention, highly shareable.",time:"3h",potential:"🔥 High"},
+  {hook:'"Before vs After: Padly apartment renovation"',format:"Transformation",platform:["TikTok","Instagram"],why:"Devimco does this with Solar Uniquartier — demonstrates product quality.",time:"4h",potential:"⚡ Med-High"},
+  {hook:'"A day in the life of a Padly tenant in [neighborhood]"',format:"Day in the life",platform:["TikTok","IG Reels"],why:"Humanizes the brand — differentiates from Cromwell/Summit corporate content.",time:"5h",potential:"⚡ Med-High"},
+  {hook:'"Montreal vs Toronto: where to live on $1,500/month?"',format:"Comparison",platform:["TikTok","IG Reels"],why:"High search intent — attracts newcomers and immigrants choosing a city.",time:"2h",potential:"🔥 High"},
+  {hook:'"3 mistakes newcomers make when looking for apartments in Montreal"',format:"Educational listicle",platform:["TikTok","Instagram"],why:"Direct Padly target audience — newcomers. Never executed in video.",time:"2h",potential:"⚡ Med-High"},
+  {hook:'"Unboxing a new apartment — tenant\'s first day"',format:"Behind the scenes",platform:["TikTok","IG Stories"],why:"Authenticity creates emotional connection that zero competitors achieve.",time:"1h",potential:"⚡ Medium"},
+];
+
+const HOOKS=[
+  {text:"POV: You just found an apartment in Montreal for $X/month",level:"🔥 Viral",why:"POV + price = immediate curiosity. Devimco uses this successfully."},
+  {text:'What $1,500/month gets you in Montreal vs Toronto',level:"🔥 Viral",why:"Geographic comparison = highly shareable. Perfect for newcomers."},
+  {text:'"How much do you pay in rent?" [mic on street]',level:"🔥 Viral",why:"@mtl_stories got 460K views with this. Proven Montreal format."},
+  {text:"This apartment in [neighborhood] was available for only 48 hours",level:"⚡ High",why:"Urgency + FOMO. Pushes audience to act now."},
+  {text:"3 things no landlord tells you when signing in Quebec",level:"⚡ High",why:"Educational + mild controversy = high retention rate."},
+  {text:"Before signing your Montreal lease, watch this",level:"⚡ High",why:"Fear of making a mistake = immediate scroll stop."},
+  {text:"Tour of the most beautiful apartment we have available TODAY",level:"⚡ High",why:"The Rental Agents uses this — direct to listings, converts well."},
+  {text:"Just arrived in Montreal and don't know where to live? 🇨🇦",level:"🎯 Niche",why:"Padly target — newcomers. Very high intent audience."},
+  {text:"The Montreal neighborhood nobody talks about — but should",level:"🎯 Niche",why:"Discovery content — highly shareable locally."},
+  {text:"We renovated this apartment completely — see the result",level:"⚡ High",why:"Visual transformation = high retention, demonstrates quality."},
+];
+
+const TIMES={
+  TikTok:[{day:"Monday",time:"7:00–9:00 AM",reason:"Commute scroll"},{day:"Tuesday",time:"12:00–2:00 PM",reason:"Lunch break peak"},{day:"Thursday",time:"7:00–9:00 PM",reason:"Start of social weekend"},{day:"Friday",time:"5:00–7:00 PM",reason:"End of workday"},{day:"Sunday",time:"8:00–10:00 PM",reason:"Week planning — people search for apartments"}],
+  Instagram:[{day:"Tuesday",time:"11:00 AM–1:00 PM",reason:"Peak mid-week engagement"},{day:"Wednesday",time:"10:00 AM–12:00 PM",reason:"Best day for Reels"},{day:"Friday",time:"10:00 AM–12:00 PM",reason:"Before weekend browsing"},{day:"Saturday",time:"9:00–11:00 AM",reason:"Active apartment search"}],
+  Facebook:[{day:"Wednesday",time:"1:00–3:00 PM",reason:"Peak Facebook traffic"},{day:"Thursday",time:"12:00–2:00 PM",reason:"High engagement pre-weekend"},{day:"Friday",time:"1:00–4:00 PM",reason:"Active housing search"}],
+};
+
+const CAL=[
+  {day:"Monday",posts:["📸 IG Stories: New apartment available — interior photo","🎵 TikTok: Quick apt tour (60s) — 'This is what $X gets you in MTL'"]},
+  {day:"Tuesday",posts:["📸 IG Reel: Before & After — renovated Padly unit (30s)","📘 FB: Listing post with price, location and link"]},
+  {day:"Wednesday",posts:["🎵 TikTok: '3 things nobody tells you before renting in Montreal'","📸 IG Post: Lifestyle neighborhood photo (Griffintown / NDG / Ahuntsic)"]},
+  {day:"Thursday",posts:["📸 IG Stories: Poll — 'Which neighborhood do you prefer?'","🎵 TikTok: Street interview — 'How much do you pay in rent in Montreal?'"]},
+  {day:"Friday",posts:["📸 IG Reel: Apartment tour — 'What $X/month gets you in Montreal'","📘 FB: Weekend post — 'Visit us this Saturday'"]},
+  {day:"Saturday",posts:["🎵 TikTok: Lifestyle video — 'A day in our building in [neighborhood]'","📸 IG Post: Premium exterior or amenity photo"]},
+  {day:"Sunday",posts:["📸 IG Stories: Week recap + CTA to visit","📸 IG Post: Quote about finding home (easy engagement)"]},
+];
+
+function Badge({label,color}){return <span style={{fontSize:"10px",padding:"2px 9px",borderRadius:"10px",fontWeight:"700",background:`${color}18`,color,border:`1px solid ${color}33`,whiteSpace:"nowrap"}}>{label}</span>;}
+
+function TopPosts({comp,t}){
+  const [ap,sAp]=useState(Object.keys(comp.platforms)[0]);
+  const [sort,sSort]=useState("likes");
+  const pd=comp.platforms[ap];
+  const posts=pd&&pd.top_posts?[...pd.top_posts].sort((a,b)=>sort==="engagement"?(b.likes/(pd.followers||1))-(a.likes/(pd.followers||1)):(b[sort]||0)-(a[sort]||0)):[];
+  return <div style={{marginTop:"16px"}}>
+    <div style={{fontSize:"11px",fontWeight:"700",color:"#888",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"10px"}}>{t.topPosts}</div>
+    <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"8px"}}>
+      {Object.keys(comp.platforms).map(p=><button key={p} onClick={()=>sAp(p)} style={{padding:"4px 10px",borderRadius:"20px",border:"none",cursor:"pointer",fontSize:"10px",fontWeight:"600",background:ap===p?`${pColors[p]}22`:"#111",color:ap===p?pColors[p]:"#555",outline:ap===p?`1px solid ${pColors[p]}44`:"none"}}>{pIcons[p]} {p.charAt(0).toUpperCase()+p.slice(1)}</button>)}
+    </div>
+    <div style={{display:"flex",gap:"4px",flexWrap:"wrap",marginBottom:"10px"}}>
+      {[["likes",t.byLikes],["views",t.byViews],["comments",t.byComments],["engagement",t.byEngagement]].map(([id,label])=><button key={id} onClick={()=>sSort(id)} style={{padding:"3px 9px",borderRadius:"7px",border:"none",cursor:"pointer",fontSize:"10px",fontWeight:"600",background:sort===id?"#7C3AED":"#1a1a1a",color:sort===id?"#fff":"#555"}}>{label}</button>)}
+    </div>
+    {posts.length>0?posts.map((p,i)=>{
+      const eRate=pd.followers?((p.likes/pd.followers)*100).toFixed(2):"—";
+      return <div key={i} style={{background:"#111",borderRadius:"8px",padding:"10px 12px",marginBottom:"7px",border:"1px solid #1a1a1a",display:"grid",gridTemplateColumns:"22px 1fr auto",gap:"8px",alignItems:"center"}}>
+        <div style={{fontSize:"12px",fontWeight:"800",color:i===0?comp.color:"#333"}}>#{i+1}</div>
+        <div>
+          <div style={{fontSize:"11px",color:"#ddd",marginBottom:"5px",lineHeight:"1.4"}}>{p.desc}</div>
+          <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+            <span style={{fontSize:"10px",color:"#E1306C"}}>❤️ {fmt(p.likes)}</span>
+            {p.views&&<span style={{fontSize:"10px",color:"#777"}}>👁️ {fmt(p.views)}</span>}
+            <span style={{fontSize:"10px",color:"#777"}}>💬 {fmt(p.comments)}</span>
+            <span style={{fontSize:"10px",color:Number(eRate)>2?"#10B981":Number(eRate)>0.5?"#F59E0B":"#EF4444"}}>⚡ {eRate}%</span>
+            <span style={{fontSize:"9px",background:"#222",color:"#555",padding:"1px 5px",borderRadius:"3px"}}>{p.type}</span>
+          </div>
+        </div>
+        <a href={p.url} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",padding:"4px 8px",borderRadius:"6px",textDecoration:"none",background:`${pColors[ap]}18`,color:pColors[ap],fontWeight:"600",whiteSpace:"nowrap"}}>{t.openPost}</a>
+      </div>;
+    }):<div style={{padding:"10px",background:"#111",borderRadius:"8px",fontSize:"11px",color:"#444",textAlign:"center"}}>{t.noData}</div>}
+  </div>;
+}
+
+function OverviewTab({t,onSel}){
+  const sorted=[...COMPETITORS].sort((a,b)=>tf(b)-tf(a));
+  const max=tf(sorted[0]);
+  return <div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:"10px",marginBottom:"20px"}}>
+      {[{l:"Competitors tracked",v:COMPETITORS.length,s:"All platforms",c:"#7C3AED"},{l:"Leader in social",v:"Rental Agents",s:"11K IG + active TikTok",c:"#FF6B35"},{l:"Your IG position",v:"#6 / 11",s:"1,559 followers",c:"#10B981"},{l:"TikTok opportunity",v:"🔥 OPEN",s:"Nobody dominates",c:"#F59E0B"}].map((c,i)=><div key={i} style={{background:"#1a1a1a",borderRadius:"10px",padding:"12px 14px",border:`1px solid ${c.c}22`}}><div style={{fontSize:"10px",color:"#555",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"3px"}}>{c.l}</div><div style={{fontSize:"16px",fontWeight:"800",color:c.c}}>{c.v}</div><div style={{fontSize:"10px",color:"#333",marginTop:"2px"}}>{c.s}</div></div>)}
+    </div>
+    <div style={{fontSize:"10px",color:"#444",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"8px",fontWeight:"700"}}>Ranking · total followers · {t.clickToView}</div>
+    {sorted.map((comp,i)=>{
+      const tot=tf(comp);const pct=Math.round((tot/max)*100);
+      return <div key={comp.id} onClick={()=>onSel(comp.id)} style={{background:"#1a1a1a",borderRadius:"10px",padding:"10px 14px",marginBottom:"7px",border:"1px solid #222",cursor:"pointer",display:"grid",gridTemplateColumns:"26px 28px 1fr auto",gap:"8px",alignItems:"center"}}
+        onMouseEnter={e=>e.currentTarget.style.borderColor=comp.color} onMouseLeave={e=>e.currentTarget.style.borderColor="#222"}>
+        <div style={{fontSize:"11px",fontWeight:"700",color:"#444",textAlign:"center"}}>#{i+1}</div>
+        <div style={{fontSize:"20px"}}>{comp.logo}</div>
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px",flexWrap:"wrap"}}>
+            <span style={{fontSize:"12px",fontWeight:"700",color:"#fff"}}>{comp.name}</span>
+            <Badge label={t.threat[comp.threat]} color={tc(comp.threat)}/>
+          </div>
+          <div style={{display:"flex",gap:"4px",flexWrap:"wrap",marginBottom:"5px"}}>
+            {Object.entries(comp.platforms).map(([p,d])=>d&&<a key={p} href={d.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{display:"inline-flex",alignItems:"center",gap:"3px",padding:"2px 7px",borderRadius:"20px",fontSize:"10px",fontWeight:"600",textDecoration:"none",background:`${pColors[p]}18`,color:pColors[p],border:`1px solid ${pColors[p]}33`,whiteSpace:"nowrap"}}>{pIcons[p]} {fmt(d.followers)}</a>)}
+          </div>
+          <div style={{height:"3px",background:"#111",borderRadius:"2px",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:comp.color,borderRadius:"2px"}}/></div>
+        </div>
+        <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"800",color:comp.color}}>{fmt(tot)}</div><div style={{fontSize:"9px",color:"#333"}}>→ details</div></div>
+      </div>;
+    })}
+    <div style={{background:"#1a0a2e",borderRadius:"10px",padding:"10px 14px",marginTop:"10px",border:"2px solid #7C3AED44",display:"grid",gridTemplateColumns:"26px 28px 1fr auto",gap:"8px",alignItems:"center"}}>
+      <div style={{fontSize:"10px",fontWeight:"700",color:"#7C3AED",textAlign:"center"}}>YOU</div>
+      <div style={{fontSize:"20px"}}>🏡</div>
+      <div>
+        <div style={{fontSize:"12px",fontWeight:"700",color:"#a78bfa",marginBottom:"4px"}}>Padly</div>
+        <div style={{display:"flex",gap:"4px",flexWrap:"wrap",marginBottom:"5px"}}>
+          {Object.entries(MY.platforms).map(([p,d])=>d&&<a key={p} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:"3px",padding:"2px 7px",borderRadius:"20px",fontSize:"10px",fontWeight:"600",textDecoration:"none",background:`${pColors[p]}18`,color:pColors[p],border:`1px solid ${pColors[p]}33`}}>{pIcons[p]} {fmt(d.followers)}</a>)}
+          <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"20px",background:"#EF444418",color:"#EF4444",border:"1px solid #EF444433",fontWeight:"600"}}>🎵 TikTok ❌</span>
+        </div>
+        <div style={{height:"3px",background:"#111",borderRadius:"2px",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.round((tf(MY)/max)*100)}%`,background:"#7C3AED",borderRadius:"2px"}}/></div>
+      </div>
+      <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"800",color:"#7C3AED"}}>{fmt(tf(MY))}</div></div>
+    </div>
+  </div>;
+}
+
+function CompetitorsTab({t,selId,setSel}){
+  const comp=COMPETITORS.find(c=>c.id===selId)||COMPETITORS[0];
+  return <div>
+    <div style={{display:"flex",gap:"5px",flexWrap:"wrap",marginBottom:"16px"}}>
+      {COMPETITORS.map(c=><button key={c.id} onClick={()=>setSel(c.id)} style={{padding:"4px 10px",borderRadius:"20px",border:`1px solid ${selId===c.id?c.color:"#333"}`,background:selId===c.id?`${c.color}22`:"transparent",color:selId===c.id?c.color:"#777",cursor:"pointer",fontSize:"10px",fontWeight:"600",whiteSpace:"nowrap"}}>{c.logo} {c.name.split(" ").slice(0,2).join(" ")}</button>)}
+    </div>
+    {comp&&<div>
+      <div style={{background:`${comp.color}12`,border:`1px solid ${comp.color}30`,borderRadius:"12px",padding:"16px 18px",marginBottom:"14px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px",flexWrap:"wrap"}}>
+          <span style={{fontSize:"26px"}}>{comp.logo}</span>
+          <div>
+            <div style={{fontSize:"16px",fontWeight:"800",color:"#fff"}}>{comp.name}</div>
+            <div style={{fontSize:"11px",color:"#777"}}>{comp.type} · <a href={comp.website} target="_blank" rel="noopener noreferrer" style={{color:comp.color}}>🌐 {t.website}</a></div>
+          </div>
+          <Badge label={`${t.threat_label}: ${t.threat[comp.threat]}`} color={tc(comp.threat)}/>
+        </div>
+        <div style={{fontSize:"11px",color:"#bbb",marginBottom:"10px"}}>{comp.specialty}</div>
+        <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+          {Object.entries(comp.platforms).map(([p,d])=>d&&<a key={p} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:"4px",padding:"5px 12px",borderRadius:"7px",textDecoration:"none",background:`${pColors[p]}22`,color:pColors[p],border:`1px solid ${pColors[p]}44`,fontSize:"11px",fontWeight:"700"}}>{pIcons[p]} {p.charAt(0).toUpperCase()+p.slice(1)} {fmt(d.followers)} →</a>)}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:"8px",marginBottom:"12px"}}>
+        {Object.entries(comp.platforms).map(([pl,data])=>{if(!data)return null;const rate=er(data.avg_likes,data.followers);return <div key={pl} style={{background:"#1a1a1a",borderRadius:"10px",padding:"12px",border:`1px solid ${pColors[pl]}18`}}>
+          <div style={{fontSize:"11px",fontWeight:"700",color:pColors[pl],marginBottom:"8px"}}>{pIcons[pl]} {pl.charAt(0).toUpperCase()+pl.slice(1)}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"}}>
+            {data.followers&&<div><div style={{fontSize:"9px",color:"#444"}}>{t.followers}</div><div style={{fontSize:"14px",fontWeight:"700",color:"#fff"}}>{fmt(data.followers)}</div></div>}
+            {data.avg_views&&<div><div style={{fontSize:"9px",color:"#444"}}>{t.avgViews}</div><div style={{fontSize:"14px",fontWeight:"700",color:"#fff"}}>{fmt(data.avg_views)}</div></div>}
+            {data.avg_likes&&<div><div style={{fontSize:"9px",color:"#444"}}>{t.avgLikes}</div><div style={{fontSize:"14px",fontWeight:"700",color:"#fff"}}>{fmt(data.avg_likes)}</div></div>}
+            {data.avg_comments&&<div><div style={{fontSize:"9px",color:"#444"}}>{t.avgComments}</div><div style={{fontSize:"14px",fontWeight:"700",color:"#fff"}}>{fmt(data.avg_comments)}</div></div>}
+            {rate&&<div><div style={{fontSize:"9px",color:"#444"}}>ER%</div><div style={{fontSize:"14px",fontWeight:"700",color:rate>2?"#10B981":rate>0.5?"#F59E0B":"#EF4444"}}>{rate}%</div></div>}
+            {data.likes_total&&<div><div style={{fontSize:"9px",color:"#444"}}>{t.totalLikes}</div><div style={{fontSize:"14px",fontWeight:"700",color:"#fff"}}>{fmt(data.likes_total)}</div></div>}
+          </div>
+        </div>;})}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+        <div style={{background:"#111",borderRadius:"8px",padding:"12px"}}><div style={{fontSize:"9px",color:"#444",textTransform:"uppercase",marginBottom:"6px"}}>✅ {t.strengths}</div>{comp.strengths.map((s,i)=><div key={i} style={{fontSize:"11px",color:"#ccc",marginBottom:"4px",paddingLeft:"10px",position:"relative"}}><span style={{position:"absolute",left:0,color:"#10B981"}}>+</span>{s}</div>)}</div>
+        <div style={{background:"#111",borderRadius:"8px",padding:"12px"}}><div style={{fontSize:"9px",color:"#444",textTransform:"uppercase",marginBottom:"6px"}}>❌ {t.weaknesses}</div>{comp.weaknesses.map((w,i)=><div key={i} style={{fontSize:"11px",color:"#ccc",marginBottom:"4px",paddingLeft:"10px",position:"relative"}}><span style={{position:"absolute",left:0,color:"#EF4444"}}>−</span>{w}</div>)}</div>
+      </div>
+      <div style={{background:"#111",borderRadius:"8px",padding:"12px",marginBottom:"12px",fontSize:"11px",color:"#ccc",lineHeight:"1.8"}}>
+        <strong style={{color:"#666"}}>{t.frequency}:</strong> {comp.weekly_activity}<br/>
+        <strong style={{color:"#666"}}>{t.recentContent}:</strong> {comp.recent}<br/>
+        <strong style={{color:"#666"}}>{t.prices}:</strong> {comp.price_range}
+      </div>
+      <TopPosts comp={comp} t={t}/>
+    </div>}
+  </div>;
+}
+
+function PlatformTab({t}){
+  const [pl,sPl]=useState("instagram");
+  const rows=COMPETITORS.filter(c=>c.platforms[pl]).map(c=>({...c,pd:c.platforms[pl]})).sort((a,b)=>(b.pd.followers||0)-(a.pd.followers||0));
+  const myPD=MY.platforms[pl];const maxF=rows[0]?.pd?.followers||1;
+  return <div>
+    <div style={{display:"flex",gap:"6px",marginBottom:"16px"}}>
+      {["instagram","tiktok","facebook"].map(p=><button key={p} onClick={()=>sPl(p)} style={{padding:"6px 14px",borderRadius:"20px",border:"none",cursor:"pointer",background:pl===p?pColors[p]:"#1a1a1a",color:pl===p?"#000":"#777",fontWeight:"700",fontSize:"11px"}}>{pIcons[p]} {p.charAt(0).toUpperCase()+p.slice(1)}</button>)}
+    </div>
+    <div style={{background:"#1a1a1a",borderRadius:"10px",overflow:"hidden",border:"1px solid #222"}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 65px 65px 65px 55px 70px",padding:"7px 12px",background:"#111",fontSize:"9px",color:"#333",textTransform:"uppercase",fontWeight:"700"}}>
+        <div>{t.platform}</div><div style={{textAlign:"right"}}>{t.followers}</div><div style={{textAlign:"right"}}>{t.avgViews}</div><div style={{textAlign:"right"}}>{t.avgLikes}</div><div style={{textAlign:"right"}}>ER%</div><div style={{textAlign:"right"}}>Link</div>
+      </div>
+      {rows.map((comp,i)=>{const rate=er(comp.pd.avg_likes,comp.pd.followers);const pct=Math.round((comp.pd.followers/maxF)*100);return <div key={comp.id} style={{padding:"9px 12px",borderTop:"1px solid #161616",display:"grid",gridTemplateColumns:"1fr 65px 65px 65px 55px 70px",alignItems:"center",background:i%2===0?"transparent":"#111"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"6px"}}><span style={{fontSize:"14px"}}>{comp.logo}</span><div><div style={{fontSize:"10px",fontWeight:"600",color:"#ddd"}}>{comp.name.split(" ").slice(0,3).join(" ")}</div><div style={{height:"3px",background:"#1a1a1a",borderRadius:"2px",width:"80px",marginTop:"3px",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:comp.color,borderRadius:"2px"}}/></div></div></div>
+        <div style={{textAlign:"right",fontSize:"11px",fontWeight:"700",color:"#fff"}}>{fmt(comp.pd.followers)}</div>
+        <div style={{textAlign:"right",fontSize:"10px",color:"#888"}}>{comp.pd.avg_views?fmt(comp.pd.avg_views):"—"}</div>
+        <div style={{textAlign:"right",fontSize:"10px",color:"#888"}}>{comp.pd.avg_likes?fmt(comp.pd.avg_likes):"—"}</div>
+        <div style={{textAlign:"right",fontSize:"10px",fontWeight:"700",color:rate>2?"#10B981":rate>0.5?"#F59E0B":"#EF4444"}}>{rate?`${rate}%`:"—"}</div>
+        <div style={{textAlign:"right"}}><a href={comp.pd.url} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",padding:"3px 7px",borderRadius:"5px",background:`${pColors[pl]}18`,color:pColors[pl],textDecoration:"none",fontWeight:"600"}}>{pIcons[pl]} →</a></div>
+      </div>;})}
+      {myPD?<div style={{padding:"9px 12px",borderTop:`2px solid #7C3AED44`,display:"grid",gridTemplateColumns:"1fr 65px 65px 65px 55px 70px",alignItems:"center",background:"#150d2a"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"6px"}}><span style={{fontSize:"14px"}}>🏡</span><div><div style={{fontSize:"10px",fontWeight:"700",color:"#a78bfa"}}>Padly (YOU)</div><div style={{height:"3px",background:"#1a1a1a",borderRadius:"2px",width:"80px",marginTop:"3px",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.round((myPD.followers/maxF)*100)}%`,background:"#7C3AED",borderRadius:"2px"}}/></div></div></div>
+        <div style={{textAlign:"right",fontSize:"11px",fontWeight:"700",color:"#a78bfa"}}>{fmt(myPD.followers)}</div>
+        <div style={{textAlign:"right",fontSize:"10px",color:"#a78bfa"}}>{myPD.avg_views?fmt(myPD.avg_views):"—"}</div>
+        <div style={{textAlign:"right",fontSize:"10px",color:"#a78bfa"}}>{myPD.avg_likes?fmt(myPD.avg_likes):"—"}</div>
+        <div style={{textAlign:"right",fontSize:"10px",fontWeight:"700",color:"#a78bfa"}}>{er(myPD.avg_likes,myPD.followers)?`${er(myPD.avg_likes,myPD.followers)}%`:"—"}</div>
+        <div style={{textAlign:"right"}}><a href={myPD.url} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",padding:"3px 7px",borderRadius:"5px",background:"#7C3AED22",color:"#a78bfa",textDecoration:"none",fontWeight:"600"}}>{pIcons[pl]} →</a></div>
+      </div>:<div style={{padding:"9px 12px",borderTop:`2px solid #7C3AED44`,background:"#150d2a",fontSize:"11px",color:"#EF4444",fontWeight:"700",textAlign:"center"}}>🚨 Padly — No TikTok account yet. Create @padlylisting today!</div>}
+    </div>
+    <div style={{marginTop:"10px",padding:"10px 14px",background:"#111",borderRadius:"8px",fontSize:"11px",color:"#666",lineHeight:"1.7"}}>
+      <strong style={{color:"#fff"}}>💡 Insight: </strong>
+      {pl==="instagram"&&"Tatiana Londono dominates with 334K but she's brokerage. In pure rental: The Rental Agents and liv.rent lead at 11K. Your 1,559 is mid-pack — consistent Reels can pass Summit, Agrasoy, Kangalou in 2-3 months."}
+      {pl==="tiktok"&&"The Rental Agents leads at 4,776 but 93.8K likes. Devimco: 26.8K likes with only 1,400 followers. Space WIDE OPEN — no MTL rental company breaks 5K. Launch now = #1 in 6 months."}
+      {pl==="facebook"&&"The Rental Agents has a 11.5K member FB Group. Big opportunity in Facebook Groups for newcomers and expats actively searching for apartments in MTL."}
+    </div>
+  </div>;
+}
+
+function WeeklyTab({t}){
+  const [exp,sExp]=useState(null);
+  return <div>
+    <div style={{background:"#1a1a1a",borderRadius:"10px",padding:"12px 16px",marginBottom:"14px",border:"1px solid #333",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px"}}>
+      <div><div style={{fontSize:"9px",color:"#444",textTransform:"uppercase"}}>{t.weeklyReport}</div><div style={{fontSize:"14px",fontWeight:"700",color:"#fff"}}>Week of June 2–8, 2026</div></div>
+      <div style={{padding:"5px 12px",background:"#7C3AED22",borderRadius:"6px",fontSize:"10px",color:"#a78bfa",fontWeight:"600"}}>🔄 {t.updateEveryMonday}</div>
+    </div>
+    {COMPETITORS.map(comp=><div key={comp.id} style={{background:"#1a1a1a",borderRadius:"10px",marginBottom:"8px",border:"1px solid #222",overflow:"hidden"}}>
+      <div onClick={()=>sExp(exp===comp.id?null:comp.id)} style={{padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+        <span style={{fontSize:"18px"}}>{comp.logo}</span>
+        <span style={{fontSize:"12px",fontWeight:"700",color:"#fff"}}>{comp.name}</span>
+        <Badge label={t.threat[comp.threat]} color={tc(comp.threat)}/>
+        <div style={{marginLeft:"auto",display:"flex",gap:"4px",flexWrap:"wrap",alignItems:"center"}}>
+          {Object.entries(comp.platforms).map(([p,d])=>d&&<a key={p} href={d.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:"10px",padding:"2px 6px",borderRadius:"6px",background:`${pColors[p]}18`,color:pColors[p],textDecoration:"none",fontWeight:"600",border:`1px solid ${pColors[p]}33`}}>{pIcons[p]}</a>)}
+          <span style={{fontSize:"12px",color:exp===comp.id?"#7C3AED":"#333",marginLeft:"4px"}}>{exp===comp.id?"▲":"▼"}</span>
+        </div>
+      </div>
+      {exp===comp.id&&<div style={{borderTop:"1px solid #222",padding:"14px 16px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+          <div style={{background:"#111",borderRadius:"7px",padding:"10px"}}><div style={{fontSize:"9px",color:"#444",textTransform:"uppercase",marginBottom:"4px"}}>📅 {t.frequency}</div><div style={{fontSize:"11px",color:"#ccc"}}>{comp.weekly_activity}</div></div>
+          <div style={{background:"#111",borderRadius:"7px",padding:"10px"}}><div style={{fontSize:"9px",color:"#444",textTransform:"uppercase",marginBottom:"4px"}}>💰 {t.prices}</div><div style={{fontSize:"11px",color:"#ccc"}}>{comp.price_range}</div></div>
+        </div>
+        <div style={{background:"#111",borderRadius:"7px",padding:"10px",marginBottom:"10px"}}><div style={{fontSize:"9px",color:"#444",textTransform:"uppercase",marginBottom:"4px"}}>📢 {t.recentContent}</div><div style={{fontSize:"11px",color:"#ccc",lineHeight:"1.6"}}>{comp.recent}</div></div>
+        <div style={{fontSize:"9px",color:"#444",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px",fontWeight:"700"}}>{t.topPosts}</div>
+        {Object.entries(comp.platforms).slice(0,1).map(([platform,data])=>data?.top_posts?.slice(0,3).map((post,i)=><div key={i} style={{background:"#111",borderRadius:"7px",padding:"8px 10px",marginBottom:"5px",display:"flex",gap:"8px",alignItems:"center"}}>
+          <span style={{fontSize:"10px",fontWeight:"700",color:i===0?comp.color:"#333",minWidth:"16px"}}>#{i+1}</span>
+          <div style={{flex:1}}><div style={{fontSize:"11px",color:"#ddd",marginBottom:"3px"}}>{post.desc}</div><div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}><span style={{fontSize:"9px",color:"#E1306C"}}>❤️ {fmt(post.likes)}</span>{post.views&&<span style={{fontSize:"9px",color:"#777"}}>👁️ {fmt(post.views)}</span>}<span style={{fontSize:"9px",color:"#777"}}>💬 {fmt(post.comments)}</span></div></div>
+          <a href={post.url} target="_blank" rel="noopener noreferrer" style={{fontSize:"9px",padding:"3px 6px",borderRadius:"5px",background:`${pColors[platform]}18`,color:pColors[platform],textDecoration:"none",fontWeight:"600",whiteSpace:"nowrap"}}>{t.openPost}</a>
+        </div>))}
+      </div>}
+    </div>)}
+  </div>;
+}
+
+function CreationTab({t}){
+  const [sub,sSub]=useState("ideas");
+  return <div>
+    <div style={{display:"flex",gap:"3px",marginBottom:"16px",background:"#111",padding:"3px",borderRadius:"9px",flexWrap:"wrap"}}>
+      {[["ideas",t.ideas],["calendar",t.calendar],["timing",t.timing],["hooks",t.hooks]].map(([id,label])=><button key={id} onClick={()=>sSub(id)} style={{padding:"6px 11px",borderRadius:"7px",border:"none",cursor:"pointer",background:sub===id?"#7C3AED":"transparent",color:sub===id?"#fff":"#777",fontWeight:sub===id?"700":"400",fontSize:"11px"}}>{label}</button>)}
+    </div>
+    {sub==="ideas"&&<div>
+      {IDEAS.map((idea,i)=><div key={i} style={{background:"#1a1a1a",borderRadius:"10px",padding:"12px 14px",marginBottom:"8px",border:"1px solid #222"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"6px",flexWrap:"wrap",gap:"5px"}}>
+          <div style={{fontSize:"12px",fontWeight:"700",color:"#fff"}}>{idea.hook}</div>
+          <Badge label={idea.potential} color={idea.potential.includes("Very")?"#EF4444":"#F59E0B"}/>
+        </div>
+        <div style={{display:"flex",gap:"4px",flexWrap:"wrap",marginBottom:"6px"}}>
+          <span style={{fontSize:"9px",padding:"2px 6px",borderRadius:"4px",background:"#222",color:"#777"}}>🎬 {idea.format}</span>
+          {idea.platform.map(p=><span key={p} style={{fontSize:"9px",padding:"2px 6px",borderRadius:"4px",background:"#7C3AED22",color:"#a78bfa"}}>{p}</span>)}
+          <span style={{fontSize:"9px",padding:"2px 6px",borderRadius:"4px",background:"#10B98118",color:"#6EE7B7"}}>⏱️ {idea.time}</span>
+        </div>
+        <div style={{fontSize:"10px",color:"#777"}}><strong style={{color:"#555"}}>{t.whyItWorks}:</strong> {idea.why}</div>
+      </div>)}
+    </div>}
+    {sub==="calendar"&&<div>
+      {CAL.map((d,i)=><div key={i} style={{background:"#1a1a1a",borderRadius:"10px",padding:"10px 14px",marginBottom:"7px",border:"1px solid #222",display:"grid",gridTemplateColumns:"80px 1fr",gap:"10px",alignItems:"start"}}>
+        <div style={{fontSize:"11px",fontWeight:"700",color:"#7C3AED",paddingTop:"2px"}}>{d.day}</div>
+        <div>{d.posts.map((p,j)=><div key={j} style={{fontSize:"11px",color:"#ccc",marginBottom:"4px",padding:"5px 8px",background:"#111",borderRadius:"5px"}}>{p}</div>)}</div>
+      </div>)}
+    </div>}
+    {sub==="timing"&&<div>
+      {Object.entries(TIMES).map(([platform,times])=><div key={platform} style={{marginBottom:"16px"}}>
+        <div style={{fontSize:"12px",fontWeight:"700",color:"#fff",marginBottom:"8px"}}>{pIcons[platform.toLowerCase()]} {platform}</div>
+        {times.map((tm,i)=><div key={i} style={{background:"#1a1a1a",borderRadius:"7px",padding:"8px 12px",marginBottom:"5px",border:"1px solid #222",display:"grid",gridTemplateColumns:"70px 120px 1fr",gap:"8px",alignItems:"center"}}>
+          <div style={{fontSize:"10px",fontWeight:"700",color:"#777"}}>{tm.day}</div>
+          <div style={{fontSize:"12px",fontWeight:"800",color:"#7C3AED"}}>{tm.time}</div>
+          <div style={{fontSize:"10px",color:"#555"}}>{tm.reason}</div>
+        </div>)}
+      </div>)}
+    </div>}
+    {sub==="hooks"&&<div>
+      {HOOKS.map((item,i)=><div key={i} style={{background:"#1a1a1a",borderRadius:"9px",padding:"10px 12px",marginBottom:"6px",border:"1px solid #222",display:"flex",gap:"8px",alignItems:"flex-start"}}>
+        <span style={{fontSize:"11px",fontWeight:"700",color:"#333",minWidth:"22px"}}>{String(i+1).padStart(2,"0")}</span>
+        <div style={{flex:1}}><div style={{fontSize:"11px",fontWeight:"700",color:"#fff",marginBottom:"3px"}}>{item.text}</div><div style={{fontSize:"10px",color:"#666"}}>{item.why}</div></div>
+        <Badge label={item.level} color={item.level.includes("Viral")?"#EF4444":"#F59E0B"}/>
+      </div>)}
+    </div>}
+  </div>;
+}
+
+function MyStatsTab({t}){
+  const GAPS=[
+    {opp:"TikTok is completely open — nobody is dominant",action:"Create @padlylisting and post 3x/week today",impact:"🔥 Maximum",timeline:"3-6 months to #1"},
+    {opp:"Instagram: Summit (1,451) and Agrasoy (1,088) are beatable in 2 months",action:"5 posts/week IG — mix of Reels + photos",impact:"⚡ High",timeline:"4-8 weeks"},
+    {opp:"Nobody does influencer collabs in MTL rental",action:"Activate influencer strategy already planned",impact:"🔥 Maximum",timeline:"Immediate"},
+    {opp:"Cromwell has 5,500 units and 412 IG followers — their tenants have no voice",action:"Create community and tenant content",impact:"⚡ High",timeline:"2-3 months"},
+    {opp:"Facebook Groups for newcomers completely untapped",action:"Join MTL immigrant groups and add value",impact:"⚡ High",timeline:"Immediate"},
+  ];
+  return <div>
+    <div style={{background:"#1a0a2e",borderRadius:"12px",padding:"16px 20px",marginBottom:"16px",border:"2px solid #7C3AED44"}}>
+      <div style={{fontSize:"15px",fontWeight:"800",color:"#fff",marginBottom:"3px"}}>🏡 Padly</div>
+      <div style={{fontSize:"10px",color:"#666",marginBottom:"12px"}}>Current position vs. competition — update weekly</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:"8px"}}>
+        {[{l:"📸 Instagram",v:"1,559",s:"@padlylisting",p:"#6 / 11",c:"#E1306C",url:MY.platforms.instagram?.url},
+          {l:"📘 Facebook",v:"966",s:"@padly.mtl",p:"#7 / 8",c:"#4A9DF8",url:MY.platforms.facebook?.url},
+          {l:"🎵 TikTok",v:"0",s:"Not created yet",p:"🚨 Create NOW",c:"#EF4444",url:null},
+          {l:"⚡ IG Engagement",v:"1.79%",s:"avg per post",p:"Industry: ~1.5%",c:"#10B981",url:null}].map((item,i)=><div key={i} style={{background:"#111",borderRadius:"8px",padding:"10px",border:`1px solid ${item.c}18`}}>
+          <div style={{fontSize:"9px",color:item.c,textTransform:"uppercase",marginBottom:"3px"}}>{item.l}</div>
+          <div style={{fontSize:"18px",fontWeight:"800",color:item.v==="0"?"#EF4444":"#fff"}}>{item.v}</div>
+          <div style={{fontSize:"9px",color:"#444",marginTop:"2px"}}>{item.s}</div>
+          <div style={{marginTop:"5px",fontSize:"9px",color:item.v==="0"?"#EF4444":"#666"}}>{item.p}</div>
+          {item.url&&<a href={item.url} target="_blank" rel="noopener noreferrer" style={{display:"block",marginTop:"4px",fontSize:"9px",color:item.c,textDecoration:"none"}}>View profile →</a>}
+        </div>)}
+      </div>
+    </div>
+    <div style={{fontSize:"10px",color:"#444",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"8px",fontWeight:"700"}}>🎯 {t.gapAnalysis}</div>
+    {GAPS.map((g,i)=><div key={i} style={{background:"#1a1a1a",borderRadius:"8px",padding:"10px 14px",marginBottom:"7px",border:"1px solid #222"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"4px",flexWrap:"wrap",gap:"4px"}}>
+        <div style={{fontSize:"11px",fontWeight:"700",color:"#fff"}}>💡 {g.opp}</div>
+        <Badge label={g.impact} color={g.impact.includes("Max")?"#EF4444":"#F59E0B"}/>
+      </div>
+      <div style={{fontSize:"10px",color:"#777"}}>→ <span style={{color:"#bbb"}}>{g.action}</span></div>
+      <div style={{fontSize:"9px",color:"#333",marginTop:"2px"}}>⏱️ {g.timeline}</div>
+    </div>)}
+  </div>;
+}
+
+function App(){
+  const [lang,sLang]=useState("en");
+  const [tab,sTab]=useState("overview");
+  const [selId,sSelId]=useState(COMPETITORS[0].id);
+  const t=T[lang];
+  const tabs=[{id:"overview",label:t.tabs[0],icon:"🏙️",color:"#7C3AED"},{id:"competitors",label:t.tabs[1],icon:"🔍",color:"#FF6B35"},{id:"platforms",label:t.tabs[2],icon:"📊",color:"#3B82F6"},{id:"weekly",label:t.tabs[3],icon:"📅",color:"#10B981"},{id:"creation",label:t.tabs[4],icon:"🚀",color:"#EF4444"},{id:"mystats",label:t.tabs[5],icon:"🏡",color:"#8B5CF6"}];
+  function handleSel(id){sSelId(id);sTab("competitors");}
+  return <div style={{background:"#0a0a0a",minHeight:"100vh",color:"#f0f0f0",padding:"14px",maxWidth:"960px",margin:"0 auto"}}>
+    <div style={{marginBottom:"18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"10px"}}>
+      <div>
+        <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px",flexWrap:"wrap"}}>
+          <div style={{fontSize:"20px",fontWeight:"900",color:"#fff",letterSpacing:"-0.5px"}}>🏙️ {t.title}</div>
+          <span style={{fontSize:"9px",padding:"2px 8px",borderRadius:"8px",background:"#7C3AED22",color:"#a78bfa",border:"1px solid #7C3AED44",fontWeight:"700"}}>LIVE TRACKER</span>
+        </div>
+        <div style={{fontSize:"10px",color:"#333"}}>{t.subtitle} · {COMPETITORS.length} companies · {t.updated}</div>
+      </div>
+      <div style={{display:"flex",gap:"3px",background:"#111",padding:"3px",borderRadius:"8px"}}>
+        {[["en","EN"],["fr","FR"],["es","ES"]].map(([code,label])=><button key={code} onClick={()=>sLang(code)} style={{padding:"4px 10px",borderRadius:"6px",border:"none",cursor:"pointer",fontSize:"10px",fontWeight:"700",background:lang===code?"#7C3AED":"transparent",color:lang===code?"#fff":"#555"}}>{label}</button>)}
+      </div>
+    </div>
+    <div style={{display:"flex",gap:"2px",padding:"3px",background:"#111",borderRadius:"10px",marginBottom:"16px",flexWrap:"wrap"}}>
+      {tabs.map(tb=><button key={tb.id} onClick={()=>sTab(tb.id)} style={{padding:"6px 11px",borderRadius:"8px",border:"none",cursor:"pointer",background:tab===tb.id?tb.color:"transparent",color:tab===tb.id?"#fff":"#666",fontWeight:tab===tb.id?"700":"400",fontSize:"11px",transition:"all 0.15s",whiteSpace:"nowrap"}}>{tb.icon} {tb.label}</button>)}
+    </div>
+    {tab==="overview"&&<OverviewTab t={t} onSel={handleSel}/>}
+    {tab==="competitors"&&<CompetitorsTab t={t} selId={selId} setSel={sSelId}/>}
+    {tab==="platforms"&&<PlatformTab t={t}/>}
+    {tab==="weekly"&&<WeeklyTab t={t}/>}
+    {tab==="creation"&&<CreationTab t={t}/>}
+    {tab==="mystats"&&<MyStatsTab t={t}/>}
+    <div style={{marginTop:"24px",padding:"10px 14px",background:"#111",borderRadius:"8px",fontSize:"9px",color:"#222",textAlign:"center"}}>
+      MTL Rental Intelligence · Padly · Update data every Monday · <span style={{color:"#7C3AED"}}>Data based on manual research — verify platforms weekly</span>
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
