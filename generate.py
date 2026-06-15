@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-Padly MTL Rental Intelligence — Auto Dashboard Generator v2
+Padly MTL Rental Intelligence — Auto Dashboard Generator v3
 Runs every Monday, Wednesday, Friday via GitHub Actions.
 
-PHASE 1: Claude searches the web for:
-  - Latest posts/content from each competitor
-  - Global viral real estate content trends
-  - What's working in other countries
-
-PHASE 2: Claude generates the full dashboard HTML with all findings.
+2 API calls total (was 12 before — fixes rate limit):
+  CALL 1: One big web search — all competitors + global trends together
+  CALL 2: Generate the full dashboard HTML with all findings
 """
 
 import json
 import os
+import time
 import anthropic
 from datetime import datetime
 
@@ -25,213 +23,159 @@ with open("data.json", "r", encoding="utf-8") as f:
 competitors = data["competitors"]
 meta = data["meta"]
 
-print(f"🔍 PHASE 1: Researching competitors and global trends ({today})...")
-
-# ── PHASE 1: Web research for each competitor ───────────────────────────────
-def research_competitor(comp):
-    name = comp["name"]
-    ig_url = comp["instagram"].get("url", "")
-    tt_url = comp["tiktok"].get("url", "")
-    print(f"   🔎 Researching: {name}")
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1500,
-        tools=[{"type": "web_search_20250305", "name": "web_search"}],
-        messages=[{
-            "role": "user",
-            "content": f"""Research the latest social media activity for "{name}", a Montreal real estate/rental company.
-
-Search for:
-1. Their most recent Instagram posts (what type of content, topics, format)
-2. Their most recent TikTok videos (what went viral, what flopped)
-3. Their engagement patterns (what gets the most likes/comments/shares)
-4. Any campaigns or promotions they are running right now
-
-Instagram: {ig_url}
-TikTok: {tt_url}
-
-Return a structured summary with:
-- RECENT_CONTENT: What they posted in the last 2 weeks (type, topic, format)
-- TOP_PERFORMING: Their best performing content style
-- WEAKNESSES: What they are NOT doing (gaps Padly can exploit)
-- ENGAGEMENT_RATE: Estimated engagement rate
-- RECOMMENDATION: One specific thing Padly should copy or avoid from this competitor
-
-Be specific and actionable. If you can't find specific posts, say so and note general patterns."""
-        }]
-    )
-    # Extract text from response
-    result = ""
-    for block in response.content:
-        if hasattr(block, "text"):
-            result += block.text
-    return result
-
-# ── PHASE 2: Global viral trends research ───────────────────────────────────
-def research_global_trends():
-    print("   🌍 Researching global viral real estate trends...")
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        tools=[{"type": "web_search_20250305", "name": "web_search"}],
-        messages=[{
-            "role": "user",
-            "content": f"""Today is {today}. Research what real estate and apartment rental content is going viral RIGHT NOW globally on TikTok, Instagram Reels, and YouTube Shorts.
-
-Search for:
-1. Most viral real estate TikTok videos this week (any country)
-2. Best performing apartment tour formats on Instagram Reels right now
-3. What rental/housing content is getting millions of views globally
-4. Successful real estate social media strategies from USA, UK, Australia, Spain, Latin America
-5. Any viral hooks, formats, or trends in property content (before/after, day in the life, apartment hunting, etc.)
-
-Return:
-- TOP_VIRAL_FORMATS: The 5 content formats getting the most views globally right now
-- VIRAL_HOOKS: The best opening hooks/lines that are working
-- COPY_FOR_PADLY: 5 specific content ideas Padly can copy immediately (adapted for Montreal)
-- TRENDING_SOUNDS: Any trending audio/sounds being used in real estate content
-- BEST_EXAMPLES: Specific accounts or videos that are crushing it right now
-
-Focus on what can be directly adapted for a Montreal rental company targeting newcomers and immigrants."""
-        }]
-    )
-    result = ""
-    for block in response.content:
-        if hasattr(block, "text"):
-            result += block.text
-    return result
-
-# Run research
-competitor_research = {}
-for comp in competitors:
-    competitor_research[comp["id"]] = research_competitor(comp)
-
-global_trends = research_global_trends()
-
-print("✅ Research complete. Building intelligence report...")
-
-# ── PHASE 3: Generate full dashboard HTML ───────────────────────────────────
-print("🤖 PHASE 2: Generating dashboard with all intelligence...")
-
-comp_data_str = "\n\n".join([
-    f"=== {c['name']} (Threat: {c['threat']}) ===\n"
-    f"IG: {c['instagram']['followers']:,} followers | TikTok: {c['tiktok']['followers']:,} | FB: {c['facebook']['followers']:,}\n"
-    f"Notes: {c['notes']}\n"
-    f"RESEARCH FINDINGS:\n{competitor_research.get(c['id'], 'No data')}"
+# Build compact competitor list for the research prompt
+comp_list = "\n".join([
+    f"- {c['name']} | IG: {c['instagram'].get('url','')} | TikTok: {c['tiktok'].get('url','')}"
     for c in competitors
 ])
 
-system_prompt = """You are an expert web developer and digital marketing strategist specializing in competitive intelligence dashboards.
+print(f"🔍 CALL 1: Researching all competitors + global trends ({today})...")
+
+# ── CALL 1: One single research call covering everything ────────────────────
+research_response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=4000,
+    tools=[{"type": "web_search_20250305", "name": "web_search"}],
+    messages=[{
+        "role": "user",
+        "content": f"""Today is {today}. You are a social media intelligence analyst for Padly, a Montreal apartment rental company.
+
+Do web searches to answer ALL of the following in one response:
+
+PART A — MONTREAL COMPETITOR ACTIVITY (search the top 3 most active ones):
+{comp_list}
+
+For the top 3 most active competitors (The Rental Agents, Tatiana Londono, The Agency Montreal):
+- What type of content have they posted recently on Instagram/TikTok?
+- What formats are they using (Reels, carousels, stories)?
+- Any campaigns, promotions, or trends they are following?
+- What gaps exist that Padly can exploit?
+
+PART B — GLOBAL VIRAL REAL ESTATE CONTENT (search this now):
+- What real estate / apartment rental content is going viral on TikTok and Reels RIGHT NOW in 2026?
+- Best performing content formats globally (tours, before/after, day-in-the-life, etc.)
+- Top viral hooks/opening lines that get attention
+- What are successful rental companies doing in USA, Spain, Latin America that Padly can copy?
+- Any trending sounds or formats in real estate content?
+
+Return everything as a structured report. Be specific with examples."""
+    }]
+)
+
+research_text = ""
+for block in research_response.content:
+    if hasattr(block, "text"):
+        research_text += block.text
+
+print(f"✅ Research done ({len(research_text)} chars). Waiting 10s before next call...")
+time.sleep(10)  # Brief pause to respect rate limits
+
+# ── CALL 2: Generate full dashboard HTML ────────────────────────────────────
+print("🤖 CALL 2: Generating dashboard HTML...")
+
+comp_data_str = "\n".join([
+    f"{c['name']} | Threat:{c['threat']} | IG:{c['instagram']['followers']:,} | TikTok:{c['tiktok']['followers']:,} | FB:{c['facebook']['followers']:,} | {c['notes']}"
+    for c in competitors
+])
+
+system_prompt = """You are an expert web developer and digital marketing strategist.
 You generate complete, self-contained HTML files with embedded CSS and JavaScript.
-You output ONLY raw HTML — no markdown, no backticks, no explanation. Start directly with <!DOCTYPE html>."""
+Output ONLY raw HTML starting with <!DOCTYPE html>. No markdown, no backticks, no explanation."""
 
-user_prompt = f"""Generate a complete, beautiful competitive intelligence dashboard for Padly — a Montreal apartment rental company targeting newcomers/immigrants.
+user_prompt = f"""Generate a complete competitive intelligence dashboard HTML for Padly — Montreal apartment rental company targeting newcomers/immigrants.
 
-Today: {today}
-Padly IG: @padlylisting ({meta['padly_ig_followers']:,} followers)
-Padly FB: @padly.mtl ({meta['padly_fb_followers']:,} followers)
-Padly TikTok: NOT CREATED YET — CRITICAL OPPORTUNITY
+TODAY: {today}
+PADLY: @padlylisting IG {meta['padly_ig_followers']:,} | @padly.mtl FB {meta['padly_fb_followers']:,} | TikTok: NOT CREATED (URGENT gap)
 
-=== LIVE COMPETITOR RESEARCH (just gathered from web) ===
+COMPETITORS (11 tracked):
 {comp_data_str}
 
-=== GLOBAL VIRAL TRENDS (just gathered from web) ===
-{global_trends}
+LIVE RESEARCH FINDINGS (gathered today via web search):
+{research_text}
 
-=== DASHBOARD DESIGN ===
-- Dark mode default (#0f0f0f bg, #7C3AED purple accent), toggle to light
-- Fixed sidebar 196px + main scrollable content area (app-shell layout)
-- CSS variables: --bg, --bg2, --bg3, --border, --txt, --txt2, --txt3, --acc: #7C3AED, --acc2: #a78bfa, --acc-bg: rgba(124,58,237,.12), --acc-bd: rgba(124,58,237,.3)
-- Mobile: sidebar hidden <680px, bottom nav bar appears
-- Trilingual toggle EN/FR/ES (affects all UI labels)
+DESIGN:
+- Dark mode default, CSS vars: --bg:#0f0f0f --bg2:#191919 --bg3:#212121 --bg4:#2b2b2b --border:#272727 --txt:#f0f0f0 --txt2:#aaa --txt3:#666 --acc:#7C3AED --acc2:#a78bfa --acc-bg:rgba(124,58,237,.12) --acc-bd:rgba(124,58,237,.3)
+- Toggle light mode
+- App shell: fixed sidebar 196px left + scrollable main content right
+- Mobile <680px: hide sidebar, show bottom nav
+- Trilingual toggle EN/FR/ES in sidebar footer
 
-=== 7 TABS ===
+7 TABS (sidebar navigation):
 
-TAB 1 — 📊 Overview
-- 4 KPI cards: Padly followers total, #1 competitor gap, TikTok opportunity score, content gap score
-- Big "OPPORTUNITY ALERT" banner: TikTok completely open, no competitor has influencers
-- Threat matrix table: all 11 competitors ranked by threat
-- Last updated timestamp
+1. 📊 Overview
+- 4 KPI cards: total Padly followers, gap to #1 competitor, TikTok opportunity (10/10), content gap score
+- URGENT ALERT banner: "TikTok completement libre — Aucun compétiteur ne domine"
+- Threat matrix: all 11 competitors as rows with threat color, followers, key weakness
 
-TAB 2 — 🏢 Competitor Analysis
-- One expandable card per competitor
-- Each card shows: platform stats, threat badge, RECENT CONTENT (from research), TOP PERFORMING content, WEAKNESSES, specific recommendation for Padly
-- Color-code by threat: red=high, orange=medium, gray=low
+2. 🏢 Competitors
+- Expandable card per competitor
+- Shows: all platform stats, threat badge (red/orange/gray), recent content found in research, top performing format, weakness, ONE specific recommendation for Padly
 
-TAB 3 — 📱 Platform Rankings
-- Instagram table: rank all competitors + Padly (highlighted in purple), followers, est. engagement rate, content quality score
-- TikTok table: same, note which ones have 0 (opportunity)
-- Facebook table: same
+3. 📱 Platforms
+- 3 sub-tabs: Instagram / TikTok / Facebook
+- Ranked table per platform: position, name, followers, est. engagement %, content score /10
+- Padly row highlighted in purple with crown emoji
 
-TAB 4 — 🌍 Global Viral Trends
-- THIS IS THE KEY NEW TAB — populate entirely from the global trends research
-- Show: Top 5 viral content formats right now
-- Show: Best viral hooks/openers
-- Show: "Copy This For Padly" — 5 specific ideas with full description
-- Show: Trending sounds/audio
-- Show: Best accounts to follow for inspiration
-- Make this tab actionable and inspiring
+4. 🌍 Global Trends
+- "What's viral RIGHT NOW" section from research findings
+- Top 5 viral formats with description + why it works
+- "Copy This For Padly" — 5 specific ready-to-execute ideas
+- Best viral hooks/openers (copy-paste ready)
+- Accounts to follow for inspiration
 
-TAB 5 — 💡 Content Strategy
-- Weekly content calendar recommendation (Mon-Sun)
-- "What to post tomorrow" section — specific idea based on what's trending
-- Content pillars for Padly (based on competitor gaps)
-- Scripts/captions ideas for first 3 videos
-- Hashtag strategy
+5. 💡 Content Strategy
+- Weekly calendar (Mon-Sun) with specific post ideas
+- "Post This Tomorrow" — one specific idea with full caption + hashtags
+- 3 content pillars for Padly based on competitor gaps
+- First 3 video scripts (short, punchy, for Reels/TikTok)
 
-TAB 6 — 📅 Weekly Intel
-- Auto-generated summary of what changed this week
-- Competitor activity log
-- Opportunities spotted
-- "This week's action items for Padly"
+6. 📅 Weekly Intel
+- This week's competitive summary (from research)
+- What each top competitor did
+- 3 opportunities spotted
+- This week's action items (numbered list)
 
-TAB 7 — 📈 My Stats
-- Simple tracker: Padly's follower count per platform
-- Week-over-week growth
-- Manual input fields to update numbers
-- Progress toward goals
+7. 📈 My Stats
+- Input fields for IG/FB/TikTok followers (saves to localStorage)
+- Week-over-week change display
+- Simple line sparkline showing growth
+- Goals tracker (1K TikTok, 5K IG, etc.)
 
-=== FLOATING AI ASSISTANT (💬 FAB bottom-right) ===
-- Chat panel, 420px wide, 580px tall
-- AI avatar, "ARIA — Padly Intelligence"
-- Knows all competitor data and research findings
-- Anthropic API (claude-sonnet-4-6), no auth header in browser
-- Show API key input field if not set (stores in localStorage as 'padly_api_key')
-- Preset questions: "What should I post today?", "What's my biggest opportunity?", "What is The Rental Agents doing?"
-- Trilingual, file upload support
+FLOATING CHAT (💬 FAB bottom-right, z-index 999):
+- Opens panel 400px wide 560px tall
+- Name: "ARIA — Padly Intelligence"  
+- Powered by Anthropic API claude-sonnet-4-6
+- If no API key in localStorage('padly_api_key'), show input field to enter it
+- System prompt includes all competitor data + research findings
+- 3 quick hint buttons: "Post idea today?", "Biggest opportunity?", "What is The Rental Agents doing?"
+- Supports file upload (images/PDFs)
+- Responds in same language as user (EN/FR/ES)
 
-=== IMPORTANT ===
-- ALL research data must appear in the dashboard (don't summarize it away)
-- TAB 4 (Global Trends) should feel like a live feed of inspiration
-- Every recommendation must be SPECIFIC and ACTIONABLE for Padly
-- Make the "Copy This For Padly" section the most useful thing in the whole dashboard
+Make it polished, data-rich, and immediately useful. Every tab must contain real data from the research above.
+Output ONLY the complete HTML file. Start with <!DOCTYPE html>."""
 
-Output ONLY the complete HTML. Nothing else."""
-
-response = client.messages.create(
+dashboard_response = client.messages.create(
     model="claude-sonnet-4-6",
     max_tokens=16000,
     messages=[{"role": "user", "content": user_prompt}],
     system=system_prompt,
 )
 
-html_content = response.content[0].text
+html_content = dashboard_response.content[0].text
 
 # Clean markdown fences if present
-if "```" in html_content[:50]:
-    lines = html_content.split("\n")
-    html_content = "\n".join(lines[1:])
-    if html_content.strip().endswith("```"):
-        html_content = "\n".join(html_content.split("\n")[:-1])
+if html_content.strip().startswith("```"):
+    lines = html_content.strip().split("\n")
+    html_content = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
 
 # Ensure starts with DOCTYPE
 if not html_content.strip().startswith("<!"):
     idx = html_content.find("<!DOCTYPE")
-    if idx > 0:
+    if idx >= 0:
         html_content = html_content[idx:]
 
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content)
 
 print(f"✅ Dashboard generated! ({len(html_content):,} chars)")
-print(f"📅 {today} | Competitors researched: {len(competitors)} | Tabs: 7")
+print(f"📅 {today} — 2 API calls used — ready on GitHub Pages")
